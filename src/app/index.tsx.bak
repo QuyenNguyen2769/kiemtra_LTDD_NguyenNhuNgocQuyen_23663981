@@ -1,0 +1,146 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  Switch, 
+  ActivityIndicator,
+  RefreshControl 
+} from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import MovieCard, { Movie } from '../components/MovieCard';
+
+// Dữ liệu giả lập thay cho API
+const MOCK_MOVIES: Movie[] = [
+  { id: '1', title: 'Hành Tinh Cát: Phần Hai', poster: 'https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2JGjjc91p.jpg', genre: 'Sci-Fi', year: 2024, rating: 8.8, isShowing: true },
+  { id: '2', title: 'Kung Fu Panda 4', poster: 'https://image.tmdb.org/t/p/w500/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg', genre: 'Animation', year: 2024, rating: 7.5, isShowing: true },
+  { id: '3', title: 'Cha Đẻ Bom Nguyên Tử', poster: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', genre: 'Biography', year: 2023, rating: 8.1, isShowing: false },
+  { id: '4', title: 'Đế Chế Mới: Godzilla x Kong', poster: 'https://image.tmdb.org/t/p/w500/tMefBSflR6PGQLvLuPEHZpuSmzn.jpg', genre: 'Action', year: 2024, rating: 6.9, isShowing: true },
+  { id: '5', title: 'Sinh Vật Đáng Thương', poster: 'https://image.tmdb.org/t/p/w500/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg', genre: 'Comedy', year: 2023, rating: 7.9, isShowing: false }
+];
+
+export default function MovieApp() {
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isTile, setIsTile] = useState(false);
+
+  const fetchMovies = useCallback(async () => {
+    // Giả lập gọi API GET
+    return new Promise<Movie[]>((resolve) => {
+      setTimeout(() => {
+        resolve([...MOCK_MOVIES].sort(() => Math.random() - 0.5));
+      }, 1000);
+    });
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    const data = await fetchMovies();
+    setMovies(data);
+    setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    const data = await fetchMovies();
+    setMovies(data);
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        {/* Câu 1c: Tiêu đề */}
+        <View style={styles.appHeader}>
+          <Text style={styles.appTitle}>Movie App</Text>
+        </View>
+
+        {/* Câu 5a: Switch dạng lưới */}
+        <View style={styles.switchContainer}>
+          <Text style={styles.switchLabel}>Dạng lưới</Text>
+          <Switch value={isTile} onValueChange={setIsTile} />
+        </View>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0000ff" />
+          </View>
+        ) : (
+          <FlatList
+            data={movies}
+            key={isTile ? 'tile-2' : 'row-1'}
+            numColumns={isTile ? 2 : 1}
+            columnWrapperStyle={isTile ? styles.columnWrapper : undefined}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <View style={isTile ? styles.tileWrapper : styles.rowWrapper}>
+                <MovieCard 
+                  movie={item} 
+                  layout={isTile ? 'tile' : 'row'} 
+                  onSelect={(id) => console.log('Movie selected:', id)}
+                />
+              </View>
+            )}
+            keyExtractor={item => item.id}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          />
+        )}
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  appHeader: {
+    padding: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  appTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    padding: 10,
+  },
+  switchLabel: {
+    marginRight: 8,
+    fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContent: {
+    paddingHorizontal: 10,
+    paddingBottom: 20,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+  },
+  tileWrapper: {
+    width: '48%',
+    marginBottom: 10,
+  },
+  rowWrapper: {
+    width: '100%',
+  },
+});
